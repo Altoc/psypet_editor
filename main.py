@@ -11,7 +11,7 @@ class DialogueLine:
 
 # Function to connect to the SQLite database
 def connect_to_database():
-    conn = sqlite3.connect('D:\psypet_prototype\psypet\data\database.db')
+    conn = sqlite3.connect('D:\psypet_prototype\psypet\data\database-test.db')
     return conn
 
 def retrieve_record():
@@ -48,33 +48,29 @@ def open_insert_record_window():
         cursor = conn.cursor()
         cursor.execute("SELECT MAX(set_id) FROM DIALOGUE_dialogue_line;")
         set_id = int(cursor.fetchone()[0]) + 1
-        conn.close()
 
-        # Insert the record into the SQLite database
-        conn = connect_to_database()
-        cursor = conn.cursor()
+        for index in range(len(text_entries)):
+            dialogue_line = DialogueLine(index, text_entries[index].get())
+            dialogue_lines.append(dialogue_line)
+
         # You'll need to adapt this part to your specific database schema
         # Here's a sample insert query:
         for record in dialogue_lines:
-            query = "INSERT INTO DIALOGUE_dialogue_line (set_id, seq_id, text) VALUES (?, ?, ?)" + str(set_id) + str(record.sequence_id) + str(record.text)
+            query = "INSERT INTO DIALOGUE_dialogue_line (set_id, seq_id, text) VALUES", str(set_id), str(record.sequence_id), str(record.text)
             cursor.execute("INSERT INTO DIALOGUE_dialogue_line (set_id, seq_id, text) VALUES (?, ?, ?)",
                            (set_id, record.sequence_id, record.text))
             print(query)
         conn.commit()
         conn.close()
 
+        insert_window.destroy()
+
     def add_text_entry():
         print("Adding entry")
         nonlocal sequence_id
         sequence_id += 1
         text_entry = ttk.Entry(insert_window)
-        # Create a DialogueLine object and add it to the dialogue_lines list
-        dialogue_line = DialogueLine(sequence_id, text_entries[-1])
-        dialogue_lines.append(dialogue_line)
         text_entries.append(text_entry)
-
-        for line, entry in zip(dialogue_lines, text_entries):
-            line.text = entry.get()
 
         text_entry.grid(row=sequence_id, column=1)
         submit_button.grid(row=sequence_id + 2, column=0, columnspan=2)
@@ -127,8 +123,5 @@ retrieve_button.grid(column=2, row=0, sticky=tk.W)
 record_display.grid(column=0, row=1, columnspan=3)
 save_button.grid(column=2, row=2, sticky=tk.E)
 insert_button.grid(column=0, row=2, sticky=tk.W)
-
-# Connect to the database on application startup
-connect_to_database()
 
 root.mainloop()
