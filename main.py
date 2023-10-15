@@ -5,9 +5,27 @@ import sqlite3
 
 # Custom class to represent a dialogue line
 class DialogueLine:
-    def __init__(self, sequence_id, text):
+    def __init__(self, sequence_id, text, next_seq_id, accept_seq_id, decline_seq_id, challenge_id, mission_start_id, mission_condition_update_id):
         self.sequence_id = sequence_id
         self.text = text
+        self.next_seq_id = next_seq_id
+        self.accept_seq_id = accept_seq_id
+        self.decline_seq_id = decline_seq_id
+        self.challenge_id = challenge_id
+        self.mission_start_id = mission_start_id
+        self.mission_condition_update_id = mission_condition_update_id
+
+
+# Custom class to represent a set of user-input on dialogue editor
+class DialogueEntry:
+    def __init__(self, entry, next_seq, accept_seq, decline_seq, challenge, mission_start, mission_condition_update):
+        self.text_entry = entry
+        self.next_seq_entry = next_seq
+        self.accept_seq_entry = accept_seq
+        self.decline_seq_entry = decline_seq
+        self.challenge_entry = challenge
+        self.mission_start_entry = mission_start
+        self.mission_condition_update_entry = mission_condition_update
 
 # Function to connect to the SQLite database
 def connect_to_database():
@@ -50,7 +68,14 @@ def open_insert_record_window():
         set_id = int(cursor.fetchone()[0]) + 1
 
         for index in range(len(text_entries)):
-            dialogue_line = DialogueLine(index, text_entries[index].get())
+            dialogue_line = DialogueLine(index,
+                                         text_entries[index].text_entry.get(),
+                                         text_entries[index].next_seq_entry.get(),
+                                         text_entries[index].accept_seq_entry.get(),
+                                         text_entries[index].decline_seq_entry.get(),
+                                         text_entries[index].challenge_entry.get(),
+                                         text_entries[index].mission_start_entry.get(),
+                                         text_entries[index].mission_condition_update_entry.get())
             dialogue_lines.append(dialogue_line)
 
         # You'll need to adapt this part to your specific database schema
@@ -69,10 +94,38 @@ def open_insert_record_window():
         print("Adding entry")
         nonlocal sequence_id
         sequence_id += 1
-        text_entry = ttk.Entry(insert_window)
+        text_entry = DialogueEntry(ttk.Entry(insert_window),
+                                   ttk.Entry(insert_window),
+                                   ttk.Entry(insert_window),
+                                   ttk.Entry(insert_window),
+                                   ttk.Entry(insert_window),
+                                   ttk.Entry(insert_window),
+                                   ttk.Entry(insert_window))
         text_entries.append(text_entry)
 
-        text_entry.grid(row=sequence_id, column=1)
+        text_label = ttk.Label(insert_window, text="Text:")
+        next_seq_label = ttk.Label(insert_window, text="next seq id:")
+        accept_seq_label = ttk.Label(insert_window, text="accept seq id:")
+        decline_seq_label = ttk.Label(insert_window, text="decline seq id:")
+        challenge_id_label = ttk.Label(insert_window, text="challenge id:")
+        mission_start_id_label = ttk.Label(insert_window, text="mission start id:")
+        mission_condition_update_id_label = ttk.Label(insert_window, text="mission condition update id:")
+
+        text_entry.text_entry.grid(row=sequence_id, column=1)
+        text_entry.next_seq_entry.grid(row=sequence_id, column=3)
+        text_entry.accept_seq_entry.grid(row=sequence_id, column=5)
+        text_entry.decline_seq_entry.grid(row=sequence_id, column=7)
+        text_entry.challenge_entry.grid(row=sequence_id, column=9)
+        text_entry.mission_start_entry.grid(row=sequence_id, column=11)
+        text_entry.mission_condition_update_entry.grid(row=sequence_id, column=13)
+
+        text_label.grid(row=sequence_id, column=0, sticky=tk.W)
+        next_seq_label.grid(row=sequence_id, column=2, sticky=tk.W)
+        accept_seq_label.grid(row=sequence_id, column=4, sticky=tk.W)
+        decline_seq_label.grid(row=sequence_id, column=6, sticky=tk.W)
+        challenge_id_label.grid(row=sequence_id, column=8, sticky=tk.W)
+        mission_start_id_label.grid(row=sequence_id, column=10, sticky=tk.W)
+        mission_condition_update_id_label.grid(row=sequence_id, column=12, sticky=tk.W)
         submit_button.grid(row=sequence_id + 2, column=0, columnspan=2)
         add_line_button.grid(row=sequence_id + 2, column=3, columnspan=2)
 
@@ -83,14 +136,40 @@ def open_insert_record_window():
     sequence_id = 0
     text_entries = []  # List to store text entry widgets
 
-    text_label = ttk.Label(insert_window, text="Text:")
-    text_entry = ttk.Entry(insert_window)
+    text_entry = DialogueEntry(ttk.Entry(insert_window),
+                               ttk.Entry(insert_window),
+                               ttk.Entry(insert_window),
+                               ttk.Entry(insert_window),
+                               ttk.Entry(insert_window),
+                               ttk.Entry(insert_window),
+                               ttk.Entry(insert_window))
     text_entries.append(text_entry)
+
+    text_label = ttk.Label(insert_window, text="Text:")
+    next_seq_label = ttk.Label(insert_window, text="next seq id:")
+    accept_seq_label = ttk.Label(insert_window, text="accept seq id:")
+    decline_seq_label = ttk.Label(insert_window, text="decline seq id:")
+    challenge_id_label = ttk.Label(insert_window, text="challenge id:")
+    mission_start_id_label = ttk.Label(insert_window, text="mission start id:")
+    mission_condition_update_id_label = ttk.Label(insert_window, text="mission condition update id:")
     submit_button = ttk.Button(insert_window, text="Submit", command=submit_record)
     add_line_button = ttk.Button(insert_window, text="Add Line", command=add_text_entry)
 
-    text_label.grid(row=0, column=0, sticky=tk.W)
-    text_entry.grid(row=0, column=1)
+    text_entry.text_entry.grid(row=sequence_id, column=1)
+    text_entry.next_seq_entry.grid(row=sequence_id, column=3)
+    text_entry.accept_seq_entry.grid(row=sequence_id, column=5)
+    text_entry.decline_seq_entry.grid(row=sequence_id, column=7)
+    text_entry.challenge_entry.grid(row=sequence_id, column=9)
+    text_entry.mission_start_entry.grid(row=sequence_id, column=11)
+    text_entry.mission_condition_update_entry.grid(row=sequence_id, column=13)
+
+    text_label.grid(row=sequence_id, column=0, sticky=tk.W)
+    next_seq_label.grid(row=sequence_id, column=2, sticky=tk.W)
+    accept_seq_label.grid(row=sequence_id, column=4, sticky=tk.W)
+    decline_seq_label.grid(row=sequence_id, column=6, sticky=tk.W)
+    challenge_id_label.grid(row=sequence_id, column=8, sticky=tk.W)
+    mission_start_id_label.grid(row=sequence_id, column=10, sticky=tk.W)
+    mission_condition_update_id_label.grid(row=sequence_id, column=12, sticky=tk.W)
     submit_button.grid(row=2, column=0, columnspan=2)
     add_line_button.grid(row=2, column=3, columnspan=2)
 
@@ -111,17 +190,15 @@ record_id_label = ttk.Label(main_frame, text="Record ID:")
 record_id_entry = ttk.Entry(main_frame)
 retrieve_button = ttk.Button(main_frame, text="Retrieve Record", command=retrieve_record)
 record_display = tk.Text(main_frame, height=10, width=40)
-save_button = ttk.Button(main_frame, text="Save Record", command=save_record)
 
 # Add a button to open the insert record window
-insert_button = ttk.Button(main_frame, text="Insert Record", command=open_insert_record_window)
+insert_button = ttk.Button(main_frame, text="Dialogue Editor", command=open_insert_record_window)
 
 # Arrange widgets using the grid layout
 record_id_label.grid(column=0, row=0, sticky=tk.W)
 record_id_entry.grid(column=1, row=0, sticky=(tk.W, tk.E))
 retrieve_button.grid(column=2, row=0, sticky=tk.W)
 record_display.grid(column=0, row=1, columnspan=3)
-save_button.grid(column=2, row=2, sticky=tk.E)
 insert_button.grid(column=0, row=2, sticky=tk.W)
 
 root.mainloop()
