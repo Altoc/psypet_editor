@@ -45,15 +45,16 @@ def open_mission_editor_window(root):
             for prereq in prereq_ids:
                 cursor.execute("INSERT INTO MISSION_condition_prerequisite (mission_id, prerequisite_of_id, prerequisite_to_id) values (?, ?, ?)",
                                (mission_id, prereq, input.condition_id))
-            #parse the supplied world state ids, if not empty, run the query
-            pairs = input.unlocked_world_states_id_entry.split(',')
-            world_state_dict = {}
-            for pair in pairs:
-                key, value = map(int, pair.split(':'))
-                world_state_dict[key] = value
-            for key, value in world_state_dict.items():
-                cursor.execute("INSERT INTO MISSION_condition_world_state (condition_entity_id, world_state_id, active_flag) values (?, ?, ?)",
-                               (input.condition_id, key, value))
+            input_string = input.unlocked_world_states_id_entry.get()
+            if not input_string.strip():
+                pairs = []
+            else:
+                pairs = input_string.split(',')
+            if(pairs):
+                for pair in pairs:
+                    key, value = map(int, pair.split(':'))
+                    cursor.execute("INSERT INTO MISSION_condition_world_state (condition_entity_id, world_state_id, active_flag) values (?, ?, ?)",
+                                   (input.condition_id, key, value))
 
         conn.commit()
         conn.close()
