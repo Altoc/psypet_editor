@@ -6,14 +6,15 @@ import db_util as db
 
 # Custom class to represent a set of user-input on the MISSION portion of the editor
 class MissionEntry:
-    def __init__(self, name_entry, description_entry):
+    def __init__(self, name_entry, description_entry, world_state_activation):
         self.name_entry = name_entry
         self.description_entry = description_entry
+        self.world_state_activation = world_state_activation
 
 
 # Custom class to represent a set of user-input on the MISSION portion of the editor
 class MissionConditionEntry:
-    def __init__(self, condition_id, name_entry, mission_completer_check_var, mission_completer_entry, unlocked_conditions_id_entry, unlocked_world_states_id_entry):
+    def __init__(self, condition_id, name_entry, mission_completer_check_var, mission_completer_entry, unlocked_conditions_id_entry, world_state_activations_entry, world_state_deactivations_entry):
         self.condition_id = condition_id
         self.name_entry = name_entry
         self.mission_completer_check_var = mission_completer_check_var
@@ -21,7 +22,9 @@ class MissionConditionEntry:
         #input into one field, comma separated, will be sorted by comma
         self.unlocked_conditions_id_entry = unlocked_conditions_id_entry
         #input into one field, comma separated, will be sorted by comma
-        self.unlocked_world_states_id_entry = unlocked_world_states_id_entry
+        self.world_state_activations_entry = world_state_activations_entry
+        #input into one field, comma separated, will be sorted by comma
+        self.world_state_deactivations_entry = world_state_deactivations_entry
 
 
 def open_mission_editor_window(root):
@@ -33,8 +36,8 @@ def open_mission_editor_window(root):
         cursor = conn.cursor()
 
         # Create MISSION_mission record
-        cursor.execute("INSERT INTO MISSION_mission (mission_id, name, description) values (?, ?, ?)",
-                       (mission_id, mission_entry.name_entry.get(), mission_entry.description_entry.get()))
+        cursor.execute("INSERT INTO MISSION_mission (mission_id, name, description, world_state_activation) values (?, ?, ?, ?)",
+                       (mission_id, mission_entry.name_entry.get(), mission_entry.description_entry.get(), mission_entry.world_state_activation.get()))
 
         # Create MISSION_condition, MISSION_condition_prerequisite, and MISSION_condition_world_state records
         for input in condition_entry_widgets:
@@ -45,16 +48,14 @@ def open_mission_editor_window(root):
             for prereq in prereq_ids:
                 cursor.execute("INSERT INTO MISSION_condition_prerequisite (mission_id, prerequisite_of_id, prerequisite_to_id) values (?, ?, ?)",
                                (mission_id, prereq, input.condition_id))
-            input_string = input.unlocked_world_states_id_entry.get()
-            if not input_string.strip():
-                pairs = []
-            else:
-                pairs = input_string.split(',')
-            if(pairs):
-                for pair in pairs:
-                    key, value = map(int, pair.split(':'))
-                    cursor.execute("INSERT INTO MISSION_condition_world_state (condition_entity_id, world_state_id, active_flag) values (?, ?, ?)",
-                                   (input.condition_id, key, value))
+            activated_world_states = [value for value in input.world_state_activations_entry.get().split(',') if value.strip()]
+            for state in activated_world_states:
+                cursor.execute("INSERT INTO MISSION_condition_world_state (condition_entity_id, world_state, active_flag) values (?, ?, ?)",
+                               (input.condition_id, state, 1))
+            deactivated_world_states = [value for value in input.world_state_deactivations_entry.get().split(',') if value.strip()]
+            for state in deactivated_world_states:
+                cursor.execute("INSERT INTO MISSION_condition_world_state (condition_entity_id, world_state, active_flag) values (?, ?, ?)",
+                               (input.condition_id, state, 0))
 
         conn.commit()
         conn.close()
@@ -74,6 +75,7 @@ def open_mission_editor_window(root):
                                                 mission_completer_check_var,
                                                 ttk.Checkbutton(mission_editor_window, text="Completes Mission", variable=mission_completer_check_var),
                                                 ttk.Entry(mission_editor_window),
+                                                ttk.Entry(mission_editor_window),
                                                 ttk.Entry(mission_editor_window))
         condition_entry_widgets.append(condition_entry)
 
@@ -81,7 +83,8 @@ def open_mission_editor_window(root):
         cond_id_value = ttk.Label(mission_editor_window, text=condition_id)
         cond_name_label = ttk.Label(mission_editor_window, text="Cond Name:")
         prereq_ids_label = ttk.Label(mission_editor_window, text="Condition Unlocks (comma delimited):")
-        world_state_ids_label = ttk.Label(mission_editor_window, text="World State Unlocks (state:active_flag, comma delimited):")
+        world_state_activations_label = ttk.Label(mission_editor_window, text="World State Activations (comma delimited):")
+        world_state_deactivations_label = ttk.Label(mission_editor_window, text="World State Deactivations (comma delimited):")
 
         separator.grid(row=row_seq_id + 2, column=0, columnspan=10, sticky="ew")
 
@@ -89,15 +92,17 @@ def open_mission_editor_window(root):
         cond_id_value.grid(row=row_seq_id + 3, column=1, sticky=tk.W)
         cond_name_label.grid(row=row_seq_id + 3, column=2, sticky=tk.E)
         prereq_ids_label.grid(row=row_seq_id + 4, column=2, sticky=tk.E)
-        world_state_ids_label.grid(row=row_seq_id + 5, column=2, sticky=tk.E)
+        world_state_activations_label.grid(row=row_seq_id + 5, column=2, sticky=tk.E)
+        world_state_deactivations_label.grid(row=row_seq_id + 6, column=2, sticky=tk.E)
 
         condition_entry.name_entry.grid(row=row_seq_id + 3, column=3, sticky=tk.W)
         condition_entry.mission_completer_entry.grid(row=row_seq_id + 4, column=0)
         condition_entry.unlocked_conditions_id_entry.grid(row=row_seq_id + 4, column=3, sticky=tk.W)
-        condition_entry.unlocked_world_states_id_entry.grid(row=row_seq_id + 5, column=3, sticky=tk.W)
+        condition_entry.world_state_activations_entry.grid(row=row_seq_id + 5, column=3, sticky=tk.W)
+        condition_entry.world_state_deactivations_entry.grid(row=row_seq_id + 6, column=3, sticky=tk.W)
 
-        submit_button.grid(row=row_seq_id + 6, column=0, columnspan=2)
-        add_cond_button.grid(row=row_seq_id + 6, column=3, columnspan=2)
+        submit_button.grid(row=row_seq_id + 7, column=0, columnspan=2)
+        add_cond_button.grid(row=row_seq_id + 7, column=3, columnspan=2)
 
     mission_editor_window = Toplevel(root)
     mission_editor_window.title("Psypet Mission Editor")
@@ -116,6 +121,7 @@ def open_mission_editor_window(root):
     # Widget Creation:
 
     mission_entry = MissionEntry(ttk.Entry(mission_editor_window),
+                                 ttk.Entry(mission_editor_window),
                                  ttk.Entry(mission_editor_window))
 
     submit_button = ttk.Button(mission_editor_window, text="Submit", command=submit_record)
@@ -124,6 +130,7 @@ def open_mission_editor_window(root):
     mission_id_value = ttk.Label(mission_editor_window, text=mission_id)
     mission_name_label = ttk.Label(mission_editor_window, text="Mission Name:")
     mission_descr_label = ttk.Label(mission_editor_window, text="Description:")
+    world_state_activated_label = ttk.Label(mission_editor_window, text="World State Activated Upon Completion:")
     separator = ttk.Separator(mission_editor_window, orient="horizontal")
 
     mission_completer_check_var = tk.IntVar()
@@ -132,6 +139,7 @@ def open_mission_editor_window(root):
                                             mission_completer_check_var,
                                             ttk.Checkbutton(mission_editor_window, text="Completes Mission", variable=mission_completer_check_var),
                                             ttk.Entry(mission_editor_window),
+                                            ttk.Entry(mission_editor_window),
                                             ttk.Entry(mission_editor_window))
     condition_entry_widgets.append(condition_entry)
 
@@ -139,7 +147,8 @@ def open_mission_editor_window(root):
     cond_id_value = ttk.Label(mission_editor_window, text=condition_id)
     cond_name_label = ttk.Label(mission_editor_window, text="Cond Name:")
     prereq_ids_label = ttk.Label(mission_editor_window, text="Condition Unlocks (comma delimited):")
-    world_state_ids_label = ttk.Label(mission_editor_window, text="World State Unlocks (state:active_flag, comma delimited):")
+    world_state_activations_label = ttk.Label(mission_editor_window, text="World State Activations (comma delimited):")
+    world_state_deactivations_label = ttk.Label(mission_editor_window, text="World State Deactivations (comma delimited):")
 
     # Widget Gridding:
 
@@ -147,22 +156,26 @@ def open_mission_editor_window(root):
     mission_id_value.grid(row=0, column=1, sticky=tk.W)
     mission_name_label.grid(row=0, column=2, sticky=tk.E)
     mission_descr_label.grid(row=1, column=2, sticky=tk.E)
+    world_state_activated_label.grid(row=2, column=2, sticky=tk.E)
 
     mission_entry.name_entry.grid(row=0, column=3, sticky=tk.W)
     mission_entry.description_entry.grid(row=1, column=3, sticky=tk.W)
+    mission_entry.world_state_activation.grid(row=2, column=3, sticky=tk.W)
 
-    separator.grid(row=2, column=0, columnspan=10, sticky="ew")
+    separator.grid(row=3, column=0, columnspan=10, sticky="ew")
 
-    cond_id_label.grid(row=3, column=0, sticky=tk.E)
-    cond_id_value.grid(row=3, column=1, sticky=tk.W)
-    cond_name_label.grid(row=3, column=2, sticky=tk.E)
-    prereq_ids_label.grid(row=4, column=2, sticky=tk.E)
-    world_state_ids_label.grid(row=5, column=2, sticky=tk.E)
+    cond_id_label.grid(row=4, column=0, sticky=tk.E)
+    cond_id_value.grid(row=4, column=1, sticky=tk.W)
+    cond_name_label.grid(row=4, column=2, sticky=tk.E)
+    prereq_ids_label.grid(row=5, column=2, sticky=tk.E)
+    world_state_activations_label.grid(row=6, column=2, sticky=tk.E)
+    world_state_deactivations_label.grid(row=7, column=2, sticky=tk.E)
 
-    condition_entry.name_entry.grid(row=3, column=3, sticky=tk.W)
-    condition_entry.mission_completer_entry.grid(row=4, column=0)
-    condition_entry.unlocked_conditions_id_entry.grid(row=4, column=3, sticky=tk.W)
-    condition_entry.unlocked_world_states_id_entry.grid(row=5, column=3, sticky=tk.W)
+    condition_entry.name_entry.grid(row=4, column=3, sticky=tk.W)
+    condition_entry.mission_completer_entry.grid(row=5, column=0)
+    condition_entry.unlocked_conditions_id_entry.grid(row=5, column=3, sticky=tk.W)
+    condition_entry.world_state_activations_entry.grid(row=6, column=3, sticky=tk.W)
+    condition_entry.world_state_deactivations_entry.grid(row=7, column=3, sticky=tk.W)
 
-    submit_button.grid(row=6, column=0, columnspan=2)
-    add_cond_button.grid(row=6, column=3, columnspan=2)
+    submit_button.grid(row=8, column=0, columnspan=2)
+    add_cond_button.grid(row=8, column=3, columnspan=2)
